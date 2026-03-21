@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
-import { Plus, X, Edit2, Download, Upload } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, X, Edit2, Download } from 'lucide-react';
 
 const ZoPegasus = ({ className }: { className?: string }) => (
-  <img src="/pegasus.png" alt="Zo" className={className} />
+  <img src="/images/pegasus.png" alt="Zo" className={className} />
 );
 
 const MilkyWayField = () => {
@@ -38,7 +38,6 @@ const MilkyWayField = () => {
       <div className="absolute inset-0" style={{
         background: 'linear-gradient(to bottom, transparent 0%, rgba(100, 150, 255, 0.03) 30%, rgba(150, 100, 200, 0.05) 45%, rgba(100, 150, 255, 0.03) 55%, transparent 100%)'
       }} />
-
       {nebulae.map((n, i) => (
         <div
           key={`nebula-${i}`}
@@ -57,16 +56,12 @@ const MilkyWayField = () => {
           }}
         />
       ))}
-
       {milkyWayStars.map(s => (
         <div
           key={s.id}
           className="absolute rounded-full bg-white"
           style={{
-            width: s.size,
-            height: s.size,
-            left: `${s.x}%`,
-            top: `${s.y}%`,
+            width: s.size, height: s.size, left: `${s.x}%`, top: `${s.y}%`,
             opacity: s.opacity,
             boxShadow: `0 0 ${s.size * 2}px ${s.size}px rgba(255, 255, 255, 0.5)`,
             animation: `twinkle ${s.duration}s ease-in-out infinite`,
@@ -74,23 +69,18 @@ const MilkyWayField = () => {
           }}
         />
       ))}
-
       {bgStars.map(s => (
         <div
           key={s.id}
           className="absolute rounded-full bg-white"
           style={{
-            width: s.size,
-            height: s.size,
-            left: `${s.x}%`,
-            top: `${s.y}%`,
+            width: s.size, height: s.size, left: `${s.x}%`, top: `${s.y}%`,
             opacity: s.opacity,
             animation: `twinkle ${s.duration}s ease-in-out infinite`,
             animationDelay: `${s.delay}s`
           }}
         />
       ))}
-
       <div className="absolute w-1 h-1 bg-white rounded-full" style={{
         top: '15%', left: '80%',
         boxShadow: '0 0 6px 2px rgba(255,255,255,0.8), -80px 0 20px 2px rgba(255,255,255,0.4), -160px 0 40px 1px rgba(255,255,255,0.2)',
@@ -129,6 +119,8 @@ const COLORS: Record<string, { bg: string; border: string }> = {
   purple: { bg: 'bg-violet-200', border: 'border-violet-400' }
 };
 
+const API = "/api/stickies";
+
 export default function ZoPad() {
   const [cards, setCards] = useState<Card[]>([]);
   const [isCreating, setIsCreating] = useState(false);
@@ -136,41 +128,47 @@ export default function ZoPad() {
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [selectedColor, setSelectedColor] = useState('yellow');
-  const [mounted, setMounted] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setMounted(true);
-    const saved = localStorage.getItem('zopad-cards');
-    if (saved) {
-      setCards(JSON.parse(saved));
-    }
+    fetch(API, { headers: { "Accept": "application/json" } })
+      .then(r => r.json())
+      .then(data => { setCards(data); setLoading(false); })
+      .catch(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    if (mounted) {
-      localStorage.setItem('zopad-cards', JSON.stringify(cards));
-    }
-  }, [cards, mounted]);
-
-  const createCard = () => {
+  const createCard = async () => {
     if (!newTitle.trim()) return;
-    const card: Card = {
+    const card = {
       id: Date.now().toString(),
       title: newTitle,
       content: newContent,
       color: selectedColor,
-      createdAt: new Date().toLocaleDateString()
+      createdAt: new Date().toLocaleDateString(),
     };
-    setCards([card, ...cards]);
+    const res = await fetch(API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(card),
+    });
+    if (res.ok) {
+      const saved = await res.json();
+      setCards([saved, ...cards]);
+    }
     setNewTitle('');
     setNewContent('');
     setSelectedColor('yellow');
     setIsCreating(false);
   };
 
-  const deleteCard = (id: string) => {
-    setCards(cards.filter(c => c.id !== id));
+  const deleteCard = async (id: string) => {
+    const res = await fetch(`${API}?id=${id}`, {
+      method: "DELETE",
+      headers: { "Accept": "application/json" },
+    });
+    if (res.ok) {
+      setCards(cards.filter(c => c.id !== id));
+    }
   };
 
   const startEdit = (card: Card) => {
@@ -181,9 +179,18 @@ export default function ZoPad() {
     setIsCreating(true);
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editingCardId || !newTitle.trim()) return;
-    setCards(cards.map(c => c.id === editingCardId ? { ...c, title: newTitle, content: newContent, color: selectedColor } : c));
+    const updated = { id: editingCardId, title: newTitle, content: newContent, color: selectedColor };
+    const res = await fetch(API, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(updated),
+    });
+    if (res.ok) {
+      const saved = await res.json();
+      setCards(cards.map(c => c.id === editingCardId ? saved : c));
+    }
     setNewTitle('');
     setNewContent('');
     setSelectedColor('yellow');
@@ -210,29 +217,13 @@ export default function ZoPad() {
     URL.revokeObjectURL(url);
   };
 
-  const importCards = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const imported: Card[] = JSON.parse(ev.target?.result as string);
-        if (Array.isArray(imported)) {
-          const existingIds = new Set(cards.map(c => c.id));
-          const newCards = imported.filter(c => !existingIds.has(c.id));
-          setCards([...newCards, ...cards]);
-        }
-      } catch { /* ignore bad files */ }
-    };
-    reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+  const getCardColor = (color: string) => COLORS[color] || COLORS.yellow;
 
-  const getCardColor = (color: string) => {
-    return COLORS[color] || COLORS.yellow;
-  };
-
-  if (!mounted) return null;
+  if (loading) return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center">
+      <p className="text-cyan-400 text-lg animate-pulse">Loading notes...</p>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-indigo-950 p-6 relative overflow-hidden">
@@ -262,16 +253,6 @@ export default function ZoPad() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={importCards}
-              className="hidden"
-            />
-            <button onClick={() => fileInputRef.current?.click()} className="p-2 text-cyan-400 hover:bg-cyan-900/30 rounded-lg transition-colors" title="Import">
-              <Upload className="w-5 h-5" />
-            </button>
             <button onClick={exportCards} className="p-2 text-cyan-400 hover:bg-cyan-900/30 rounded-lg transition-colors" title="Export">
               <Download className="w-5 h-5" />
             </button>
@@ -340,18 +321,10 @@ export default function ZoPad() {
                 className={`${getCardColor(card.color).bg} ${getCardColor(card.color).border} border-2 rounded-xl p-4 shadow-lg transform hover:scale-105 transition-all group relative`}
               >
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                  <button
-                    onClick={() => startEdit(card)}
-                    className="p-1.5 bg-white/80 rounded hover:bg-white transition-colors"
-                    title="Edit"
-                  >
+                  <button onClick={() => startEdit(card)} className="p-1.5 bg-white/80 rounded hover:bg-white transition-colors" title="Edit">
                     <Edit2 className="w-4 h-4 text-slate-700" />
                   </button>
-                  <button
-                    onClick={() => deleteCard(card.id)}
-                    className="p-1.5 bg-white/80 rounded hover:bg-white transition-colors"
-                    title="Delete"
-                  >
+                  <button onClick={() => deleteCard(card.id)} className="p-1.5 bg-white/80 rounded hover:bg-white transition-colors" title="Delete">
                     <X className="w-4 h-4 text-red-600" />
                   </button>
                 </div>

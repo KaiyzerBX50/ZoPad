@@ -1,85 +1,64 @@
-# 📝 ZoPad
+# ZoPad — Private Sticky Notes for Zo Space
 
-A beautiful, private sticky notes app with a cosmic Milky Way background. Built with React + TypeScript on [Zo Computer](https://zocomputer.com).
+A personal sticky notes app that runs on your Zo Computer. Notes are stored server-side on **your** machine — no shared databases, no cross-user data, fully private.
 
-![ZoPad Preview](screenshot.png)
+![ZoPad Screenshot](https://raw.githubusercontent.com/KaiyzerBX50/ZoPad/main/assets/screenshot.png)
 
 ## Features
 
-- 🌌 Milky Way star field with shooting stars and nebulae
-- 🎨 8 color options for your notes (yellow, cyan, teal, green, blue, ocean, electric, purple)
-- ✏️ Create, edit, and delete sticky notes
-- 💾 All data saved locally in your browser (localStorage) — your notes never leave your device
-- 📦 Export/import your notes as JSON backups
-- 📱 Responsive grid layout (1–4 columns)
-- ⚡ Zero backend required — runs entirely in your browser
+- 🗒️ Create, edit, delete sticky notes
+- 🎨 8 color options (yellow, cyan, teal, green, blue, ocean, electric, purple)
+- 📱 Create notes via SMS or chat — just text "Sticky: pick up groceries"
+- 💾 Server-side storage — works across browsers and devices
+- 📦 Export notes as JSON backup
+- 🔒 Private by design — each Zo Computer is isolated
+- 🌌 Milky Way space theme with animated starfield
 
-## Quick Install on Zo Computer
+## Quick Install
 
-If you have a [Zo Computer](https://zocomputer.com), just ask Zo:
+In your Zo chat, say:
 
-> "Install ZoPad from https://github.com/KaiyzerBX50/ZoPad"
+> *"Install the ZoPad skill and deploy it"*
 
 Or manually:
 
-1. Go to your Zo Computer chat
-2. Say: **"Create a new page route at `/stickies` using the code from this file"** and paste the contents of `src/ZoPad.tsx`
+### 1. Create the API route
 
-That's it — your ZoPad will be live at `https://yourhandle.zo.space/stickies`
+Create a new **API route** at `/api/stickies` using the code in [`routes/api-stickies.ts`](routes/api-stickies.ts)
 
-## Install Anywhere (Standalone)
+### 2. Create the page
 
-### Prerequisites
+Create a new **page route** at `/stickies` using the code in [`routes/page-stickies.tsx`](routes/page-stickies.tsx)
 
-- [Node.js](https://nodejs.org/) 18+ or [Bun](https://bun.sh/)
+### 3. (Optional) Enable SMS note creation
 
-### Steps
+Add a Zo rule:
+- **Condition:** User asks to create a sticky, note, post-it, or ZoPad entry
+- **Instruction:** Create it by running: `curl -s -X POST http://localhost:3099/api/stickies -H "Content-Type: application/json" -H "Accept: application/json" -d '{"title":"<title>","content":"<content>","color":"<color>"}'`. Use "yellow" as default color unless specified.
 
-```bash
-git clone https://github.com/KaiyzerBX50/ZoPad.git
-cd ZoPad
-npm install
-npm run dev
-```
+## Privacy & Data Isolation
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+- Notes live in `/home/workspace/Space/postits/notes.json` on **your server only**
+- No data is shared between Zo Computer instances
+- Fresh install = empty board — no sample data, no cross-contamination
+- The file is auto-created on first note — zero setup required
 
-### Build for Production
+## API Reference
 
-```bash
-npm run build
-```
+| Method | Endpoint | Body | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/stickies` | — | List all notes |
+| `POST` | `/api/stickies` | `{title, content, color}` | Create a note |
+| `PUT` | `/api/stickies` | `{id, title?, content?, color?}` | Update a note |
+| `DELETE` | `/api/stickies?id=<id>` | — | Delete a note |
 
-Static files will be in `dist/` — deploy anywhere (Vercel, Netlify, GitHub Pages, etc).
+## Tech Stack
 
-## Project Structure
-
-```
-ZoPad/
-├── src/
-│   └── ZoPad.tsx          # Main component (self-contained)
-├── index.html             # Entry point
-├── package.json           # Dependencies
-├── vite.config.ts         # Vite config
-├── tsconfig.json          # TypeScript config
-├── tailwind.config.js     # Tailwind CSS config
-├── postcss.config.js      # PostCSS config
-└── public/
-    └── pegasus.png        # Zo Pegasus logo
-```
-
-## Privacy
-
-ZoPad stores all notes in your browser's localStorage. No server, no database, no tracking. Your data is yours.
-
-## Export & Backup
-
-Click the download icon in the header to export all your notes as a JSON file. You can re-import them anytime.
+- **Frontend:** React + Tailwind CSS (Zo Space page route)
+- **Backend:** Hono API route (Zo Space API route)
+- **Storage:** JSON file on local filesystem
+- **Runtime:** Bun
 
 ## License
 
 MIT
-
-## Credits
-
-Built with ❤️ on [Zo Computer](https://zocomputer.com) by [@dagawdnyc](https://dagawdnyc.zo.computer)
