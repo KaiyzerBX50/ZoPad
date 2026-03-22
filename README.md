@@ -2,7 +2,7 @@
 
 A personal sticky notes app that runs on your Zo Computer. Notes are stored server-side on **your** machine — no shared databases, no cross-user data, fully private.
 
-![ZoPad Screenshot](https://raw.githubusercontent.com/KaiyzerBX50/ZoPad/main/assets/screenshot.png)
+![ZoPad Dashboard](screenshots/dashboard.png)
 
 ## Features
 
